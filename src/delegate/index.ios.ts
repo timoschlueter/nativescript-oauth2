@@ -1,4 +1,4 @@
-import * as applicationModule from '@nativescript/core/application';
+import { getNativeApplication, ios as applicationIOS } from '@nativescript/core/application';
 import { TnsOAuthClient } from "../index";
 
 function setup() {
@@ -12,22 +12,19 @@ function setup() {
     }
 
     private static getAppDelegate() {
-      // As of NativeScript 8.2, ensureNativeApplication should be called prior to accesses to applicationModule.ios.
-      /* @ts-ignore */
-      if (!!applicationModule.ensureNativeApplication) {
-        /* @ts-ignore */
-        applicationModule.ensureNativeApplication();
-      }
+      // Ensure native app objects are initialized before accessing iOS delegate.
+      getNativeApplication();
+
       // Play nice with other plugins by not completely ignoring anything already added to the appdelegate
-      if (applicationModule.ios.delegate === undefined) {
+      if (applicationIOS.delegate === undefined) {
         @NativeClass
         class UIApplicationDelegateImpl extends UIResponder implements UIApplicationDelegate {
           public static ObjCProtocols = [UIApplicationDelegate];
         }
 
-        applicationModule.ios.delegate = UIApplicationDelegateImpl;
+        applicationIOS.delegate = UIApplicationDelegateImpl;
       }
-      return applicationModule.ios.delegate;
+      return applicationIOS.delegate;
     }
 
     private static addAppDelegateMethods = appDelegate => {
