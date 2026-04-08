@@ -1,3 +1,11 @@
+declare const kSecRandomDefault: any;
+declare function SecRandomCopyBytes(
+  rnd: any,
+  count: number,
+  bytes: any
+): number;
+declare function CC_SHA256(data: any, len: number, md: any): any;
+
 const SHA256_DIGEST_LENGTH = 32;
 
 export function getCodeVerifier(): string {
@@ -18,7 +26,7 @@ export function sha256base64encoded(inputString: string): string {
 }
 
 function encodeBase64urlNoPadding(data: NSData): string {
-  let base64string = data.base64EncodedStringWithOptions(0);
+  let base64string = data.base64EncodedStringWithOptions(NSDataBase64EncodingOptions.Encoding64CharacterLineLength);
   // converts base64 to base64url
   base64string = base64string.replace(/\+/g, "-");
   base64string = base64string.replace(/\//g, "_");
