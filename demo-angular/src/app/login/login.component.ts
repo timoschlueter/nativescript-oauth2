@@ -8,6 +8,7 @@ import { AuthService } from "../auth.service";
     selector: "ns-login",
     moduleId: module.id,
     templateUrl: "login.component.html",
+    standalone: false,
 })
 export class LoginComponent {
     constructor(

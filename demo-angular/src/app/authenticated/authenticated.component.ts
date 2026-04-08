@@ -7,6 +7,7 @@ import { AuthService } from "../auth.service";
     selector: "ns-authenticated",
     moduleId: module.id,
     templateUrl: "authenticated.component.html",
+    standalone: false,
 })
 export class AuthenticatedComponent {
     constructor(

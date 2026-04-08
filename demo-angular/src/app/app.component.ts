@@ -5,5 +5,6 @@ import { Page } from "@nativescript/core";
     selector: "ns-app",
     moduleId: module.id,
     templateUrl: "app.component.html",
+    standalone: false,
 })
 export class AppComponent {}

@@ -1,15 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "es2020",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "declaration": false,
-    "removeComments": true,
+    "removeComments": false,
     "noLib": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,
-    "lib": ["es2017", "dom"],
+    "lib": [
+      "es2017",
+      "dom",
+      "ESNext"
+    ],
     "sourceMap": true,
     "pretty": true,
     "allowUnreachableCode": false,
@@ -27,6 +31,8 @@
       }
     ]
   },
-  "exclude": ["node_modules"],
+  "exclude": [
+    "node_modules"
+  ],
   "compileOnSave": false
 }

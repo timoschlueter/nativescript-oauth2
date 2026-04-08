@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "target": "es2017",
-    "moduleResolution": "node",
+    "target": "es2020",
+    "moduleResolution": "bundler",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "noEmitHelpers": true,
@@ -12,7 +12,8 @@
       "es2018",
       "es2017",
       "dom",
-      "es6"
+      "es6",
+      "ESNext"
     ],
     "baseUrl": ".",
     "paths": {
