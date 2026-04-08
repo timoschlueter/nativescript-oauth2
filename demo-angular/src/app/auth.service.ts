@@ -31,8 +31,8 @@ export class AuthService {
     });
   }
 
-  public tnsOauthLogout(): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
+  public tnsOauthLogout(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       if (this.client) {
         this.client.logoutWithCompletion(
           (error) => {

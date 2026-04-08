@@ -1,9 +1,61 @@
 import { HttpResponse } from "@nativescript/core";
-import * as querystring from "querystring";
-import * as UrlLib from "url";
 import { TnsOaProvider } from "./providers";
 import { ITnsOAuthTokenResult } from ".";
 import { TnsOAuthClient } from "./index";
+
+function encodeFormValue(value: any): string {
+  return encodeURIComponent(String(value)).replace(/%20/g, "+");
+}
+
+export function toFormUrlEncoded(params: any): string {
+  if (!params) {
+    return "";
+  }
+
+  const entries: string[] = [];
+  for (const key of Object.keys(params)) {
+    const value = params[key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+    entries.push(`${encodeFormValue(key)}=${encodeFormValue(value)}`);
+  }
+  return entries.join("&");
+}
+
+function parseFormOrQueryString(value: string): any {
+  const result = {};
+  if (!value) {
+    return result;
+  }
+
+  const trimmed = value.charAt(0) === "?" ? value.slice(1) : value;
+  for (const pair of trimmed.split("&")) {
+    if (!pair) {
+      continue;
+    }
+    const eqIndex = pair.indexOf("=");
+    const rawKey = eqIndex >= 0 ? pair.slice(0, eqIndex) : pair;
+    const rawValue = eqIndex >= 0 ? pair.slice(eqIndex + 1) : "";
+    const key = decodeURIComponent(rawKey.replace(/\+/g, "%20"));
+    const decodedValue = decodeURIComponent(rawValue.replace(/\+/g, "%20"));
+    result[key] = decodedValue;
+  }
+
+  return result;
+}
+
+function queryStringFromUrl(url: string): string {
+  const queryStart = url.indexOf("?");
+  if (queryStart < 0) {
+    return "";
+  }
+
+  const hashStart = url.indexOf("#", queryStart);
+  return hashStart >= 0
+    ? url.slice(queryStart + 1, hashStart)
+    : url.slice(queryStart + 1);
+}
 
 function addCustomQueryParams(params: object, provider: TnsOaProvider): void {
   const customQueryParams = provider.options.customQueryParams;
@@ -37,7 +89,7 @@ export function getAuthUrlStr(
 
   addCustomQueryParams(params, provider);
 
-  const pararmsStr = querystring.stringify(params);
+  const pararmsStr = toFormUrlEncoded(params);
 
   const retAuthUrlStr =
     provider.authority + provider.authorizeEndpoint + "?" + pararmsStr;
@@ -62,7 +114,7 @@ export function getLogoutUrlStr(
 
   addCustomQueryParams(params, provider);
 
-  const pararmsStr = querystring.stringify(params);
+  const pararmsStr = toFormUrlEncoded(params);
 
   const retAuthUrlStr =
     provider.authority + provider.endSessionEndpoint + "?" + pararmsStr;
@@ -73,9 +125,7 @@ export function authorizationCodeFromRedirectUrl(url: string): string {
   let authorizationCode: string = null;
 
   if (url) {
-    let parsedRetStr = UrlLib.parse(url);
-
-    let qsObj = querystring.parse(parsedRetStr.query) as any;
+    const qsObj = parseFormOrQueryString(queryStringFromUrl(url));
     authorizationCode = qsObj["code"];
   }
   return authorizationCode;
@@ -113,10 +163,10 @@ export function getAccessTokenUrlWithCodeStr(
 
   addCustomQueryParams(params, provider);
 
-  const pararmsStr = querystring.stringify(params);
+  const pararmsStr = toFormUrlEncoded(params);
 
   const paramsWithRedirectStr =
-    pararmsStr + "&redirect_uri=" + provider.options.redirectUri;
+    pararmsStr + "&redirect_uri=" + encodeFormValue(provider.options.redirectUri);
 
   const retAccessTokenWithCodeUrlStr =
     getAccessTokenUrlStr(provider) + "?" + paramsWithRedirectStr;
@@ -173,7 +223,7 @@ export function httpResponseToToken(
     // and neither seem to specify a content-type correctly in their response headers :(
     // clients of these services will suffer a *minor* performance cost of the exception
     // being thrown
-    results = querystring.parse(response.content.toString());
+    results = parseFormOrQueryString(response.content.toString());
   }
   let access_token = results["access_token"];
   let refresh_token = results["refresh_token"];

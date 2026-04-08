@@ -13,13 +13,22 @@ import {
 
 declare let android, global: any;
 
-function useAndroidX() {
-  return global.androidx && global.androidx.appcompat;
-}
+function getCustomTabsModule() {
+  const androidxModule = global && global.androidx;
+  if (
+    androidxModule &&
+    androidxModule.browser &&
+    androidxModule.browser.customtabs
+  ) {
+    return androidxModule.browser.customtabs;
+  }
 
-const customtabs = useAndroidX()
-  ? androidx.browser?.customtabs
-  : android.support.customtabs;
+  if (android && android.support && android.support.customtabs) {
+    return android.support.customtabs;
+  }
+
+  return null;
+}
 
 export class TnsOAuthLoginNativeViewController
   implements ITnsOAuthLoginController {
@@ -64,14 +73,26 @@ export class TnsOAuthLoginNativeViewController
   }
 
   private openUrlWithParametersCompletion(fullUrl: string, frame: Frame): void {
-    const builder = new customtabs.CustomTabsIntent.Builder();
-    builder.setToolbarColor(new Color("#335da0").android);
-    builder.setShowTitle(true);
-    const customTabsIntent = builder.build();
-    customTabsIntent.launchUrl(
-      Application.android.startActivity,
+    const customtabs = getCustomTabsModule();
+    if (customtabs && customtabs.CustomTabsIntent) {
+      const builder = new customtabs.CustomTabsIntent.Builder();
+      builder.setToolbarColor(new Color("#335da0").android);
+      builder.setShowTitle(true);
+      const customTabsIntent = builder.build();
+      customTabsIntent.launchUrl(
+        Application.android.startActivity,
+        android.net.Uri.parse(fullUrl)
+      );
+      return;
+    }
+
+    // Fallback for devices/runtimes without custom tabs classes.
+    const intent = new android.content.Intent(
+      android.content.Intent.ACTION_VIEW,
       android.net.Uri.parse(fullUrl)
     );
+    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+    Application.android.startActivity.startActivity(intent);
   }
 
   public resumeWithUrl(url: string): boolean {

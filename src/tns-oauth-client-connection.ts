@@ -1,6 +1,3 @@
-import * as querystring from "querystring";
-import * as URL from "url";
-
 import { Http, HttpResponse, HttpRequestOptions } from "@nativescript/core";
 
 import {
@@ -9,9 +6,23 @@ import {
 } from "./providers";
 
 import { TnsOAuthClient, TnsOAuthResponseBlock } from "./index";
-import { httpResponseToToken } from "./tns-oauth-utils";
+import { httpResponseToToken, toFormUrlEncoded } from "./tns-oauth-utils";
 
 const accessTokenName = "access_token";
+
+function hostFromUrl(url: string): string {
+  const match = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)/i.exec(url || "");
+  return match ? match[1] : null;
+}
+
+function appendQueryParam(url: string, key: string, value: string): string {
+  const hashIndex = url.indexOf("#");
+  const base = hashIndex >= 0 ? url.slice(0, hashIndex) : url;
+  const hash = hashIndex >= 0 ? url.slice(hashIndex) : "";
+  const separator = base.indexOf("?") >= 0 ? "&" : "?";
+  const encoded = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  return `${base}${separator}${encoded}${hash}`;
+}
 
 export class TnsOAuthClientConnection {
   private _client: TnsOAuthClient;
@@ -91,7 +102,7 @@ export class TnsOAuthClientConnection {
       "Content-Type": "application/x-www-form-urlencoded",
     };
     const options = <TnsOaOpenIdProviderOptions>this.client.provider.options;
-    const body = querystring.stringify({
+    const body = toFormUrlEncoded({
       client_id: options.clientId,
       token: this.client.tokenResult.refreshToken,
       token_type_hint: "refresh_token"
@@ -130,7 +141,7 @@ export class TnsOAuthClientConnection {
         const options1 = <TnsOaOpenIdProviderOptions>(
           this.client.provider.options
         );
-        body = querystring.stringify({
+        body = toFormUrlEncoded({
           grant_type: "refresh_token",
           refresh_token: this.client.tokenResult.refreshToken,
           client_id: options1.clientId,
@@ -140,7 +151,7 @@ export class TnsOAuthClientConnection {
         const options2 = <TnsOaUnsafeProviderOptions>(
           this.client.provider.options
         );
-        body = querystring.stringify({
+        body = toFormUrlEncoded({
           grant_type: "refresh_token",
           refresh_token: this.client.tokenResult.refreshToken,
           client_id: options2.clientId,
@@ -251,7 +262,7 @@ export class TnsOAuthClientConnection {
 
     params["redirect_uri"] = client.provider.options.redirectUri;
 
-    let post_data = querystring.stringify(params);
+    let post_data = toFormUrlEncoded(params);
 
     const post_headers = {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -279,8 +290,6 @@ export class TnsOAuthClientConnection {
     post_body,
     access_token
   ): Promise<HttpResponse> {
-    const parsedUrl = URL.parse(url, true);
-
     const realHeaders = {};
     for (let key in this._customHeaders) {
       realHeaders[key] = this._customHeaders[key];
@@ -290,28 +299,22 @@ export class TnsOAuthClientConnection {
         realHeaders[key] = headers[key];
       }
     }
-    realHeaders["Host"] = parsedUrl.host;
 
-    if (access_token && !("Authorization" in realHeaders)) {
-      if (!parsedUrl.query) {
-        parsedUrl.query = {};
-      }
-      parsedUrl.query[accessTokenName] = access_token;
+    const host = hostFromUrl(url);
+    if (host) {
+      realHeaders["Host"] = host;
     }
 
-    let queryStr = querystring.stringify(parsedUrl.query);
-    if (queryStr) {
-      queryStr = "?" + queryStr;
-    }
+    const requestUrl = access_token && !("Authorization" in realHeaders)
+      ? appendQueryParam(url, accessTokenName, access_token)
+      : url;
+
     const options = {
-      host: parsedUrl.hostname,
-      port: parsedUrl.port,
-      path: parsedUrl.pathname + queryStr,
       method: method,
       headers: realHeaders,
     };
 
-    return this._executeRequest(options, url, post_body);
+    return this._executeRequest(options, requestUrl, post_body);
   }
 
   private _executeRequest(options, url, post_body): Promise<HttpResponse> {
